@@ -1,0 +1,73 @@
+{
+  "develop": {
+    "mrt": {
+      "top": {
+        "library_type": "@Library('pipeline-library')",
+        "pipeline": "import org.fw.mrtDocker.*",
+        "env.nodeLabel": "'docker'",
+        "env.manifest": "'mrt.xml'",
+        "env.initEnvTestplan": "'testplan/Whitley/sut_init.yaml'"
+      },
+      "bottom": {
+        "instantiation": "def builder = new JenkinsPipeline().createBuilder(nodeLabel)",
+        "call": "builder.Pipeline(nodeLabel, manifest)\nbuilder.SendEmail(nodeLabel)"
+      }
+    }
+  },
+  "auto": {
+    "xpit": {
+      "top": {
+        "library_type": "@Library('pipeline-library')",
+        "pipeline": "import org.fw.xPITDocker.*",
+        "env.nodeLabel": "'docker'",
+        "env.manifest": "'xpit.xml'",
+        "env.initEnvTestplan": "'testplan/Whitley/sut_init.yaml'"
+      },
+      "bottom": {
+        "instantiation": "def builder = new JenkinsPipeline().createBuilder(nodeLabel)",
+        "call": "builder.Pipeline(nodeLabel, manifest)\nbuilder.SendEmail(nodeLabel)"
+      }
+    },
+    "daily": {
+      "top": {
+        "library_type": "@Library('pipeline-library')",
+        "pipeline": "import org.fw.dailyDocker.*",
+        "env.nodeLabel": "'docker'",
+        "env.manifest": "'daily.xml'",
+        "env.initEnvTestplan": "'testplan/Whitley/sut_init.yaml'"
+      },
+      "bottom": {
+        "instantiation": "def builder = new JenkinsPipeline().createBuilder(nodeLabel)",
+        "call": "builder.Pipeline(nodeLabel, manifest)\nbuilder.SendEmail(nodeLabel)"
+      }
+    },
+    "memorystress": {
+      "top": {
+        "library_type": "@Library('pipeline-library')",
+        "pipeline": "import org.fw.memStressDocker.*",
+        "env.nodeLabel": "'docker'",
+        "env.manifest": "'py3auto.xml'",
+        "env.initEnvTestplan": "'testplan/Whitley/sut_init.yaml'",
+        "env.openBackdoorTestplan": "'Common/Common/memory_stress_with_bmc_restart.yaml'",
+        "env.checkFFDCTestplan": "'XPIT/Base/check_ffdc_file.yaml'"
+      },
+      "bottom": {
+        "instantiation": "def builder = new JenkinsPipeline().createBuilder(nodeLabel)",
+        "call": "builder.Pipeline(nodeLabel, manifest)\nbuilder.SendEmail(nodeLabel)"
+      }
+    },
+    "performance": {
+      "top": {
+        "library_type": "@Library('pipeline-library')",
+        "pipeline": "import org.fw.performanceDocker.*",
+        "env.nodeLabel": "'docker'",
+        "env.manifest": "'py3auto.xml'",
+        "env.initEnvTestplan": "'testplan/Whitley/sut_init.yaml'"
+      },
+      "bottom": {
+        "instantiation": "def builder = new JenkinsPipeline().createBuilder(nodeLabel)",
+        "call": "builder.Pipeline(nodeLabel, manifest)\nbuilder.SendEmail(nodeLabel)"
+      }
+    }
+  }
+}

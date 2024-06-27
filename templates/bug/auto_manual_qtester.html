@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="/static/js/jquery-2.2.1.min.js"></script>
+    <title>bugtotal</title>
+    <style>
+        table {
+            width: 50%;
+            border-collapse: collapse;
+        }
+
+        table caption {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 1em 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #999;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        table thead tr {
+            background-color: #008c8c;
+            color: #fff;
+        }
+
+        table tbody tr:nth-child(odd) {
+            background-color: #eee;
+        }
+
+        table tbody tr:hover {
+            background-color: #ccc;
+        }
+
+        table tbody tr td:first-child {
+            color: rgb(17, 13, 12);
+        }
+
+        table tfoot tr td {
+            text-align: right;
+            padding-right: 20px;
+        }
+
+
+
+
+    </style>
+</head>
+
+<body>
+<div>
+<div style="width:45%; float:left;">
+    <div>
+        <table>
+            <caption>Category by validity</caption>
+            <tr>
+                <th></th>
+                <th>BBFV Manual</th>
+                <th>BBFV Auto</th>
+                <th>Qtester</th>
+            </tr>
+            {% for k,v in category_by_validity.items %}
+            <tr>
+                <td>{{ k }}</td>
+                <td>{{ v.manual }}</td>
+                <td>{{ v.auto }}</td>
+                <td>{{ v.qtester }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <br>
+    <div>
+        <table>
+            <caption>Total defects by releases</caption>
+            <tr>
+                <th></th>
+                <th>BBFV Manual</th>
+                <th>BBFV Auto</th>
+                <th>Qtester</th>
+            </tr>
+            {% for k,v in res.items %}
+            <tr>
+                <td>{{ k }}</td>
+                <td id="manual_{{k}}"><input
+                        style="font-weight: bolder; width:100px; font-size:1em; text-align: center;  background-color: transparent; text-transform: uppercase; border-style: none; outline: none; cursor: pointer; text-decoration: underline;"
+                        value="{{ v.manual }}" onclick="get_detail(manual_{{k}})"></td>
+                <td style="width:100%;" id="auto_{{k}}"><input
+                        style="font-weight: bolder;width:100px; font-size:1em; text-align: center; background-color: transparent; text-transform: uppercase; border-style: none; outline: none; cursor: pointer; text-decoration: underline;"
+                        value="{{ v.auto }}" onclick="get_detail(auto_{{k}})"></td>
+                <td  style="width:100%;" id="qtester_{{k}}"><input
+                        style="font-weight: bolder;font-size:1em;width:100px;  text-align: center; background-color: transparent; text-transform: uppercase; border-style: none; outline: none; cursor: pointer; text-decoration: underline;"
+                        value="{{ v.qtester }}" onclick="get_detail(qtester_{{k}})"></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+</div>
+<div style="width:55%; float:right;">
+    <div>
+        <table>
+            <caption>Invalid defects</caption>
+            <tr>
+                <th></th>
+                <th>BBFV Manual</th>
+                <th>BBFV Auto</th>
+                <th>Qtester</th>
+            </tr>
+            {% for k,v in invalid_res.items %}
+            <tr>
+                <td>{{ k }}</td>
+                <td>{{ v.manual }}</td>
+                <td>{{ v.auto }}</td>
+                <td>{{ v.qtester }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div>
+        <table>
+            <caption>Effective defective by releases</caption>
+            <tr>
+                <th></th>
+                <th>BBFV Manual</th>
+                <th>BBFV Auto</th>
+                <th>Qtester</th>
+            </tr>
+            {% for k,v in effective_defects_by_releases.items %}
+            <tr>
+                <td>{{ k }}</td>
+                <td>{{ v.manual }}</td>
+                <td>{{ v.auto }}</td>
+                <td>{{ v.qtester }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+</div>
+<br>
+<br>
+<br>
+<div style="width:100%">
+    <div style="width:100%;margin:0px auto;"></div>
+    <table style="margin:0px auto;" id="detailMess">
+    </table>
+</div>
+
+</body>
+<script>
+    function get_detail(ele) {
+        var item_plat = ele.id;
+        $.ajax({
+                            url: "/api/bz/detail/",
+                            type: 'POST',
+                            data: {item_platform: item_plat},
+                            success: function(ctx)
+                                {
+                                    if(ctx != '{"res": {}}')
+                                    {
+                                        let _res = JSON.parse(ctx)['res'];
+                                        _res = _res.sort(sortUpDate);
+                                        var data = new Array();
+                                        data.push('<caption>' + item_plat + ' defects detail <input id="daochu" type="button" value="导出" class="searchBt" onclick="toExcel()"></caption><tr><th>ID</th><th>Summary</th><th>Release</th><th>Product</th><th>Component</th><th>Creator</th><th>Assignee</th><th>Status</th><th>Resolution</th><th>Create_time</th></tr>');
+                                        for(let i=0 ; i<_res.length; i++){
+                                            var id = _res[i]['Id'];
+                                            var Creator = _res[i]['Creator'];
+                                            var Release = _res[i]['Release'];
+                                            var Product = _res[i]['Product'];
+                                            var Component = _res[i]['Component'];
+                                            var Assignee = _res[i]['Assignee'];
+                                            var Status = _res[i]['Status'];
+                                            var Resolution = _res[i]['Resolution'];
+                                            var Summary = _res[i]['Summary'];
+                                            var Create_time = _res[i]['Create_time'];
+                                            data.push('<tr><td>'+ id +'</td><td>'+ Summary +'</td><td>'+ Release +'</td><td>'+ Product +'</td><td>'+ Component +'</td><td>'+ Creator +'</td><td>'+ Assignee +'</td><td>'+ Status +'</td><td>'+ Resolution +'</td><td>'+ Create_time +'</td></tr>');
+
+                                        document.getElementById("detailMess").innerHTML = data.join('');
+                                        }
+
+
+
+
+
+                                        }
+
+                                }
+                            })
+        }
+
+    function sortUpDate(a, b) {
+         return Date.parse(b.Create_time) - Date.parse(a.Create_time);
+          }
+
+
+    function base64(content) {
+		    	return window.btoa(unescape(encodeURIComponent(content)));
+		    }
+		    var format = function (s, c) {
+		        return s.replace(/{(\w+)}/g,
+		            function (m, p) {
+		                return c[p];
+		            });
+		    }
+
+    function toExcel() {
+		    	var excelContent = $("#detailMess").html();
+		    	var excelFile = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>";
+		    	excelFile += "<head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>";
+		        excelFile += "<body><table width='50%'  border='1'>";
+		        excelFile += excelContent;
+		        excelFile += "</table></body>";
+		        excelFile += "</html>";
+                //定义excel 的sheet名称
+		        var ctx = {worksheet: "Bug_sheet"};
+		        var link = "data:application/vnd.ms-excel;base64," + base64(format(excelFile, ctx));
+		        var a = document.createElement("a");
+                //定义excel 的文件名称
+		        var fileName ="Bug_sheet";
+		        a.download = fileName+".xls";
+		        a.href = link;
+		        a.click();
+			}
+
+
+
+</script>
+
+</html>

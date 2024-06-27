@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!--更多资源：https://gitee.com/iGaoWei/big-data-view -->
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="600">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <title>BUG</title>
+    <link rel="icon" href="/static/img/bug.png">
+    <script src="/static/js/jquery-2.2.1.min.js"></script>
+    <script src="/static/js/rem.js"></script>
+    <script src="/static/js/echarts.min.js"></script>
+    <!--    <script src="/static/js/index.js"></script>-->
+</head>
+
+<body>
+    <div class="t_container">
+        <header class="t_h_bg">
+            <span>BUG DATA</span>
+        </header>
+        <main class="t_main">
+            <div class="t_box">
+                <header class="t_title">
+                    <span id="countBug">本月bug总数</span>
+                    <span class="bug_number"></span>
+                </header>
+                <div class="t_list">
+                    <select id="year" onchange="selected_month()">
+                        <option>2022</option>
+                        <option selected>2023</option>
+                        <option>2024</option>
+                        <option>2025</option>
+                    </select>
+                    <select id="month" onchange="selected_month()">
+                        <option value="1">1月</option>
+                        <option value="2">2月</option>
+                        <option value="3">3月</option>
+                        <option value="4">4月</option>
+                        <option value="5">5月</option>
+                        <option value="6">6月</option>
+                        <option value="7">7月</option>
+                        <option value="8">8月</option>
+                        <option value="9">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                    <!--                   <div class="t_min">转换率 8% <i class="down"></i></div>-->
+                </div>
+                <div id="chart_1" class="echart" style="width: 100%; height: 2.4rem;"></div>
+            </div>
+            <div class="t_box">
+                <header class="t_title">
+                    <span>manual bug统计</span>
+                </header>
+                <div id="chart_2" class="echart" style="width: 100%; height: 3rem;"></div>
+            </div>
+            <div class="t_box">
+                <header class="t_title">
+                    <span>2022年度bug走势图</span>
+                </header>
+                <div id="chart_3" class="echart" style="width: 100%; height: 3rem;"></div>
+            </div>
+            <div class="t_box">
+                <header class="t_title">
+                    <span>auto bug统计</span>
+                </header>
+                <div id="chart_4" class="echart" style="width: 100%; height: 3rem;"></div>
+            </div>
+        </main>
+    </div>
+</body>
+<script>
+
+        echart_1();
+        echart_2();
+        echart_3();
+        echart_4();
+        function selected_month(){
+            echart_1();
+        }
+        function echart_1() {
+            var yearoptions=$("#year option:selected");
+            var monthoptions=$("#month option:selected");
+            $.ajax({
+                url: "/api/bz/bugmonth/"+yearoptions.text()+"/"+monthoptions.val(),
+                type: 'GET',
+                success: function (res) {
+                    if (res != '[{"res": {}}]') {
+                        var _auto = res['data']['auto'];
+                        var _manual = res['data']['manual'];
+                        var count_auto = res['data']['count_auto'];
+                        var count_manual = res['data']['count_manual'];
+                        var all = count_auto + count_manual
+                        document.getElementById('countBug').innerHTML = '本月bug总数 '+all+" manual: "+count_manual+" auto: "+count_auto;
+                    }
+
+                    // 基于准备好的dom，初始化echarts实例
+                    var myChart = echarts.init(document.getElementById('chart_1'));
+                    var xAxisData = [];
+                    for (var v = 0; v < _auto.length; v++) {
+                        xAxisData.push(v+1);
+                    }
+                    var legendData = ['auto', 'manual'];
+                    var title = 'bug';//标题
+                    var serieData = [];
+                    var metaDate = [_auto,_manual]
+                    for (var v = 0; v < legendData.length; v++) {
+                        var serie = {
+                            name: legendData[v],
+                            type: 'line',
+                            symbol: "circle",
+                            symbolSize: 10,
+                            data: metaDate[v]
+                        };
+                        serieData.push(serie);
+                    }
+                    var colors = ["#036BC8", "#FFF", "#5EBEFC", "#2EF7F3"];
+                    var option = {
+                        // backgroundColor: '#0f375f',
+                        title: {
+                            text: title,
+                            textAlign: 'left',
+                            textStyle: {
+                                color: "#fff",
+                                fontSize: "12",
+                                fontWeight: "bold"
+                            }
+                        },
+                        legend: {
+                            show: true,
+                            left: "center",
+                            data: legendData,
+                            y: "5%",
+                            itemWidth: 18,
+                            itemHeight: 12,
+                            textStyle: {
+                                color: "#fff",
+                                fontSize: 14
+                            },
+                        },
+                        toolbox: {
+                            orient: 'vertical',
+                            right: '1%',
+                            top: '20%',
+                            iconStyle: {
+                                color: '#fff',
+                                borderColor: '#fff',
+                                borderWidth: 1,
+                            },
+                            feature: {
+                                saveAsImage: {},
+                                magicType: {
+                                    // show: true,
+                                    type: ['line', 'bar', 'stack', 'tiled']
+                                }
+                            }
+                        },
+                        color: colors,
+                        grid: {
+                            left: '2%',
+                            top: "12%",
+                            bottom: "5%",
+                            right: "5%",
+                            containLabel: true
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            },
+                        },
+                        xAxis: [{
+                            type: 'category',
+                            axisLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#6173A3'
+                                }
+                            },
+                            axisLabel: {
+                                interval: 0,
+                                textStyle: {
+                                    color: '#9ea7c4',
+                                    fontSize: 12
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            data: xAxisData,
+                        },],
+                        yAxis: [{
+                            axisTick: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: false
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    color: '#9ea7c4',
+                                    fontSize: 12
+                                }
+                            },
+                            axisLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#6173A3'
+                                }
+                            },
+                        },],
+                        series: serieData
+                    };
+                    // 使用刚指定的配置项和数据显示图表。
+                    myChart.setOption(option);
+                    window.addEventListener("resize", function () {
+                        myChart.resize();
+                    });
+                }
+            })
+        }
+        function echart_4() {
+            // 基于准备好的dom，初始化echarts实例
+            var adata = [];
+            var bdata = [];
+            var cdata = [];
+            $.ajax({
+                url: "/api/bz/allBug/",
+                type: 'POST',
+                data: { "auto_or_manual": "auto" },
+                success: function (res) {
+                    if (res != '[{"res": {}}]') {
+                        var _res = res['data']['bug_total'];
+                        for (var item in _res) {
+                            if (item != 'total_bug') {
+                                var p = new Object()
+                                adata.push(item);
+                                bdata.push(parseInt(_res[item]));
+                                p.name = item;
+                                p.value = parseInt(_res[item]);
+                                cdata.push(p);
+                            }
+                        }
+                        delete _res.total_bug;
+                        console.log(adata);
+                        var myChart = echarts.init(document.getElementById('chart_4'));
+                        var giftImageUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAD8AAABFCAYAAAD95j54AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAxMSURBVHhe5Zt7cBXVHcf5o4NVlIg0NEBIIO8HIYGQhLzIE8gNBBIoIUAIEAgGQoCAESIoikKC8kYFFAMqaoUiKkiZ4dEyUyvq2E6LFuugFKEEhletvDH8en7n7Nl7zt6z9+4GcuNMd+Yz33s2ubvne77nt2f35qbdnIKDYIXZNpklKOOAqY5IaoCUyKn0dTXdz9QKMwXVGW7SFrSKaLs5wzSDms4WlBrR9YBayUFQZ5E2MySaMwc7zHVY4rOQFlWpG1KBnTaqzH6lVgmKhkW1lbxR3YEDYFQZNM/UEf8kZMXMlvaLxquHO9vT8/fANMcuonvJfv5zNgBcVUkbVUqeJo4p622TpCUlHdXaevJG5RjaujFCduxcGNx3gbRPpDD5eUgIK4Ugv1QI7JJINcC3P4R1z4bUqEdhzMCNxJQqcUxZTF6mRclbAdPjKiaq0tTIaVCQtJS20SzX0WnrICogD/oFF8OIAcuhYshOaVAm574DQ+IXQUSPwdAvpATGZW5mA2A3ec81rylHS1yveUGd5sxhJpn2DR4NY9Jfkoxl96khyWbBqNTV0n7sPFeRoQlLwK9TJAT7BEJm9KNknzgDePKyaskfYgPgBjRmVCvgQHCVQfPsNU7fKYN+q+9PjiiH/qHjoNKxm5nmNU8SM1M0OCCoCPL9wyHykWCYkP2GOnkNZ/KYqqikEzRZ2tYSNiirdWJAUGrIg2JnqZI2vsYLV4BvPDNBQOPJEVP0Ngc7z5XBEhV1bOarkNjTAY6+tTRZZ80761ykzdf58aROYwILqDG88GHi+DPRuDtcB4XAkza2BbVZ8+oZcLfrfH7/xZAePR1GpaymNa5PdQPYaaPKuM4E1CpBTWreM2jQqO7AATCqDJo/CAPCJ8IwcrEK7ZZBL3p8v2hcXOdZ21XRIFdV0kaVkqeJY8p62yRpSUlHtbZZjesY2txIcNd0SCIDkBFTre9TgZ3mylAnLSfOapu3jbTpOj8hayu5YUmBrp2iIcJ/EPh3joXuhMgeQ+jSZRwAFWhMT5zjJnGuNmteU46W+N2s88kRk+GX7TtAYVoa7G6ogGsHqylHNlVCSXY+dPEJgpEpK2Fa3vswMHoGHRDsPDftHnEG8ORlbbN1flBcLXR9pCd8u326bvrYWxOh6YNpevu7HVUQG9wPujwcTAfnhRmlEB9aSO7t32fJkwS5okFLNa/hTB5TFZV0jiZL21rCBmW1TlIUFBP1pNjZsRmbqHE0hyZvfNoAOxufh3bt2lEGxnYn6Zfog1A5oohQSF/jIPTwjSFmWKJmWkWV1TZXI15f5yflbCMPJ71149c/Xgx3bl+DAD8f2LVrFzQ1NYGPjw8dhE2P5+oDMJaUwROlxfoA4Azg09+lDHjSxragNmtePQPsrPM41WN69ac1zU3d/v4PcGjvDsjOzga+1dTU6LPgbztq9d9N7Z0GJ7RBa6ybTO8PnCbdzQCmJjXvGTTIdUvDUfji8Fm40HQNLp+/YYmX1r8K44ocuhHOnesX4dDubdTokSNHqPmePXvq5g++/xp8s4NdF5r2zIbKCSP19+Yn5cBEMpNs1bymUvI0cUxZb7smvaLmMzj93Y+0gz/dboZz31yAs/8875G19euhpGCw3mkR3Lh5xNfXV3+N4Hb8k3f136+vKYWy4qHw9e9mw5ndsyAjfjQzpCUsJ85qm7eN2Eq+6fsrtDOHN3wK6/K2wprcRo+Mi5oCuVH9JcOcG39ZR4936Typ8w73SaaRPqFd6c9vXTkP+1Y5Ex8UnQBZ8Qkwa8pvwJGd4Uyc4yZxrrZq/p11x2hHDq39s9KkiqdSn4eILqGSYRFuHreVi6tczOOM4NvWZeX6+9ZXjoaTpBTeW1oOgQE9YJSjipmSEGcAT15Wy+v813+9CFcuXlOaNCPGtx/sq58kGRYRzeO28/XVkB4fAgVZcXDowze1vWzbvMx5kUT2NTiPO29KMb0znJi7jRl3l7yGM3lMV1RiltY6bbOav3njJzjx6SmlSRWYutl05+D6bnWrmzlWeQwOLn+9/KIhP+FpPWlnzTvrXMRyzeN2/OOTSqMq8oJGwIbqUcqOiljd6uexNd4TDrIC4LMBTZqjmAG2ah43O+ZDOoUrO2ek+cfT9NjutltXLkDp4Ejl+1XUlY6hd4EV5JkAE0bDLG1ZWy15dxc6EWPdq7bVT8+k9/2q95vBb4NxADwmTxPHlPW2vM7jZsd8lF+IslMqTh6ohx/O/IOeQ9yuXvgXbGqYI93n20EcAJa4TKslb8c8gk9zeC//dv14+Gz7k7CwLFFa21uK80HITfL3uub7+MUpO9MW4BNhQtgEapilLtW853Xernm82r89f7yyM21Bb/JAVeHQ6l9KHtMVlZg1rvN2zVtZ571JHXkcTiNPgV6peQSXuy82Oj+eakuw9hPDy7xT8wimnxAQo+yMt9lSN4nUfZmWulTznmmJeQSf6vApTNUhb4IXvfzEZ7yzzov8HAYgpFsUlOVs05L3Qs2LtOUAbKmbDLFBI9mV3ls1bwSXP3wWV3WwtdjdMJXe5EzN20UNK2r+3q/zKuozX4SkXr2VnWwNMHH8w0eZ+Jyv4Uwe0xWVmL3bdd4Md097/BZ34cQk2L5kaIvv6VfMKKU1HhtURBP3+vO8GYldUy2t/fgUhwMxLDUI3iUDYfz52wvGUz5aUwmbl02DEWnJEOYfCb/qGAzpvaezpzlMmyduUK/XPGLnthc/p3ti9FDwfbAThHQOprMGwQHE4yCzyudAY2MjxIeUaGbZ87uNz/A8423z+BlduG8YXSXwWqE6FvIt6dOdO3cgN+7x1vvc3pvmsSxCO4e5Nc1xmq9lxqTEWW3ztpGfZfL4QIS3xqr3GxGTZ+blhM30Z1nzmHqMb1/le1UozVMs17z31vnEbqluzeNNUFHYWOX7VdiueQ1n8piuqMTsvVjnn0lfBTUJi2Be4lOwPGsDZEbnwqolayAnegC9kqvMD+83gF7kVMdTYa3mnXUu0io1XxpdAf4PBbj8+SkhNI4e5+zpc5Abmw1zCxx0rcap/uL0YhiVnAPlhRXwQsMKmJI8Q3lsI25r3tgW9J7XPF6kevoEu5gO7PggTO0dCYUhYZAWnQJn/32OHu/o51/BusUvw6PFM2D75p10H26L5j4FUZ1D7upqb6PmPYObO/MLU+rhofYdXYz7P9gB3hiSAZ+UFFCqYuMg1q8X1FYsgC+Jeb5dvnwZljz2HER1C4GS8Gh4ryAH0v3jPA6A7ZrXVEqeJo4p621763yPjs4vFHB+/cD9sH9knm6cg/twEDJ7hECCXyAEd+oCqd2D6MxA0+LveRoAazXPE5exnDye4Pif1OZHho9zMf7wfe2lxFsKHiOv1wDleRE039zcrK55q8l7qvmzp/8Ll079x+Xky7NedjGOFIUEKs20hPVZ6VAcUehybuTyqR/g5IkmyE/QPqLSsVzzntf59xqP0qn/wcL90skdQYUuxrHOVSbuhrKoPlCb9LR07g8W7ad9emnldihKWdl66/z84j/CzZu34erFa7Cz9vf05KtyNsP9v3jAxXx1XJTSwN0yMixTN76zdh9cvXQNbty4BVn9pkH54HeZQSlxVttcjViueRyAjUsP0/rC7cyX52BV3TqYVz5foswxGtaPKYXXJpTD58+tvae8UlUHf//wGJz5ii2VzT81w5OPbYC8+IWacQ2etLEtqK2a5zNgasFGePPVj+Dqleu0A22xXSHnfv2VPZCfNote6KYP3UtMscSNiglzNal5z6BxruU5b4EjfhEMHzgPhmfMUVKg0HtBflo1JIWXQVafOfRrrLa/e6uplDxNHFPW2/I6r9YD9JuX2Db7rq2OoU07bQPsNFeGOmk5cVbbvG2kRclbwey7t2aKxoxqBTSmJ85xkzhXmzWvKUdLXP/uraBOU+Zgx7naATvP1T3iDODJy2p5nUdjRrUCDgRXGTSvahPV/6dGU4v/V6fPAHeq4UweUxWVnJQmS9tawgZltU46KijtuAfFzlIlbdpxi1BzmjJYomZaRZXVNlcjtmreDpgiV5dkFYrG8LWoVkCjXHV40sa2oDZrXj0D9JrXkpVNmYMd5moF7LRRZdzNAKYmNe8ZNGhUd+AAGFUGzZuraFyveb3tqmjQUs1rKiVPE8eU9bZJ0pKSjmptsxrXMbQlMxbATnNlqJOWE2e1zdtG/o/X+QPwP6P5eLs0FaqUAAAAAElFTkSuQmCC";
+                        myChart.setOption({
+                            graphic: {
+                                elements: [{
+                                    type: 'image',
+                                    style: {
+                                        image: giftImageUrl,
+                                        width: 30,
+                                        height: 30
+                                    },
+                                    left: '73%',
+                                    top: 'center'
+                                }]
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                axisPointer: {
+                                    type: 'shadow'
+                                }
+                            },
+                            legend: {
+                                data: ['bug'],
+                                left: '27%'
+                            },
+                            grid: {
+                                left: '1%',
+                                right: '60%',
+                                top: '10%',
+                                bottom: '10%',
+                                containLabel: true,
+                            },
+                            xAxis: {
+                                type: 'value',
+                                position: 'top',
+                                splitLine: { show: false },
+                                boundaryGap: [0, 0.01],
+                                axisTick: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    textStyle: {
+                                        color: '#9ea7c4',
+                                        fontSize: 12
+                                    }
+                                },
+                                axisLine: {
+                                    show: true,
+                                    lineStyle: {
+                                        color: '#6173A3'
+                                    }
+                                },
+                            },
+                            yAxis: {
+                                type: 'category',
+                                data: adata,
+                                axisTick: {
+                                    show: false
+                                },
+                                splitLine: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    textStyle: {
+                                        color: '#9ea7c4',
+                                        fontSize: 12
+                                    }
+                                },
+                                axisLine: {
+                                    show: true,
+                                    lineStyle: {
+                                        color: '#6173A3'
+                                    }
+                                },
+                            },
+                            series: [{
+                                name: '',
+                                itemStyle: {
+                                    normal: {
+                                        color: function (params) {
+                                            // build a color map as your need.
+                                            var colorList = [
+                                                '#D7504B', '#C6E579', '#F4E001', '#F0805A', '#26C0C0',
+                                                '#FE8463', '#9BCA63', '#FAD860', '#F3A43B', '#60C0DD',
+                                                '#C1232B', '#B5C334', '#FCCE10', '#E87C25', '#27727B'
+                                            ];
+                                            return colorList[params.dataIndex]
+                                        },
+                                        shadowBlur: 20,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                },
+                                type: 'bar',
+                                data: bdata
+                            }, {
+                                type: 'pie',
+                                radius: [30, '80%'],
+                                center: ['75%', '50%'],
+                                roseType: 'radius',
+                                color: [
+                                    '#D7504B', '#C6E579', '#F4E001', '#F0805A', '#26C0C0',
+                                    '#FE8463', '#9BCA63', '#FAD860', '#F3A43B', '#60C0DD',
+                                    '#C1232B', '#B5C334', '#FCCE10', '#E87C25', '#27727B'
+                                ],
+                                data: cdata,
+                                label: {
+                                    normal: {
+                                        textStyle: {
+                                            fontSize: 14
+                                        },
+                                        formatter: function (param) {
+                                            return param.name + ':\n' + Math.round(param.percent) + '%';
+                                        }
+                                    }
+                                },
+                                labelLine: {
+                                    normal: {
+                                        smooth: true,
+                                        lineStyle: {
+                                            width: 2
+                                        }
+                                    }
+                                },
+                                itemStyle: {
+                                    normal: {
+                                        shadowBlur: 30,
+                                        shadowColor: 'rgba(0, 0, 0, 0.4)'
+                                    }
+                                },
+
+                                animationType: 'scale',
+                                animationEasing: 'elasticOut',
+                                animationDelay: function (idx) {
+                                    return Math.random() * 200;
+                                }
+                            }]
+                        });
+                    }
+                }
+            });
+
+        }
+
+
+
+        function echart_2() {
+            // 基于准备好的dom，初始化echarts实例
+            var adata = [];
+            var bdata = [];
+            var cdata = [];
+            $.ajax({
+                url: "/api/bz/allBug/",
+                type: 'POST',
+                data: { "auto_or_manual": "manual" },
+                success: function (res) {
+                    if (res != '[{"res": {}}]') {
+                        var _res = res['data']['bug_total'];
+                        for (var item in _res) {
+                            if (item != 'total_bug') {
+                                var p = new Object()
+                                adata.push(item);
+                                bdata.push(parseInt(_res[item]));
+                                p.name = item;
+                                p.value = parseInt(_res[item]);
+                                cdata.push(p);
+                            }
+                        }
+                        delete _res.total_bug;
+                        console.log(adata);
+                        var myChart = echarts.init(document.getElementById('chart_2'));
+                        var giftImageUrl = "data:image/png;base64,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";
+                        myChart.setOption({
+                            graphic: {
+                                elements: [{
+                                    type: 'image',
+                                    style: {
+                                        image: giftImageUrl,
+                                        width: 30,
+                                        height: 30
+                                    },
+                                    left: '73%',
+                                    top: 'center'
+                                }]
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                axisPointer: {
+                                    type: 'shadow'
+                                }
+                            },
+                            legend: {
+                                data: ['bug'],
+                                left: '27%'
+                            },
+                            grid: {
+                                left: '1%',
+                                right: '60%',
+                                top: '10%',
+                                bottom: '10%',
+                                containLabel: true,
+                            },
+                            xAxis: {
+                                type: 'value',
+                                position: 'top',
+                                splitLine: { show: false },
+                                boundaryGap: [0, 0.01],
+                                axisTick: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    textStyle: {
+                                        color: '#9ea7c4',
+                                        fontSize: 12
+                                    }
+                                },
+                                axisLine: {
+                                    show: true,
+                                    lineStyle: {
+                                        color: '#6173A3'
+                                    }
+                                },
+                            },
+                            yAxis: {
+                                type: 'category',
+                                data: adata,
+                                axisTick: {
+                                    show: false
+                                },
+                                splitLine: {
+                                    show: false
+                                },
+                                axisLabel: {
+                                    textStyle: {
+                                        color: '#9ea7c4',
+                                        fontSize: 12
+                                    }
+                                },
+                                axisLine: {
+                                    show: true,
+                                    lineStyle: {
+                                        color: '#6173A3'
+                                    }
+                                },
+                            },
+                            series: [{
+                                name: '',
+                                itemStyle: {
+                                    normal: {
+                                        color: function (params) {
+                                            // build a color map as your need.
+                                            var colorList = [
+                                                '#D7504B', '#C6E579', '#F4E001', '#F0805A', '#26C0C0',
+                                                '#FE8463', '#9BCA63', '#FAD860', '#F3A43B', '#60C0DD',
+                                                '#C1232B', '#B5C334', '#FCCE10', '#E87C25', '#27727B'
+                                            ];
+                                            return colorList[params.dataIndex]
+                                        },
+                                        shadowBlur: 20,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                },
+                                type: 'bar',
+                                data: bdata
+                            }, {
+                                type: 'pie',
+                                radius: [30, '80%'],
+                                center: ['75%', '50%'],
+                                roseType: 'radius',
+                                color: ['#D7504B', '#C6E579', '#F4E001', '#F0805A', '#26C0C0',
+                                    '#FE8463', '#9BCA63', '#FAD860', '#F3A43B', '#60C0DD',
+                                    '#C1232B', '#B5C334', '#FCCE10', '#E87C25', '#27727B'],
+                                data: cdata,
+                                label: {
+                                    normal: {
+                                        textStyle: {
+                                            fontSize: 14
+                                        },
+                                        formatter: function (param) {
+                                            return param.name + ':\n' + Math.round(param.percent) + '%';
+                                        }
+                                    }
+                                },
+                                labelLine: {
+                                    normal: {
+                                        smooth: true,
+                                        lineStyle: {
+                                            width: 2
+                                        }
+                                    }
+                                },
+                                itemStyle: {
+                                    normal: {
+                                        shadowBlur: 30,
+                                        shadowColor: 'rgba(0, 0, 0, 0.4)'
+                                    }
+                                },
+
+                                animationType: 'scale',
+                                animationEasing: 'elasticOut',
+                                animationDelay: function (idx) {
+                                    return Math.random() * 200;
+                                }
+                            }]
+                        });
+                    }
+                }
+            });
+
+        }
+
+        function echart_3() {
+            // 基于准备好的dom，初始化echarts实例
+            $.ajax({
+                url: "/api/bz/bugdate/2022",
+                type: 'GET',
+                success: function (res) {
+                    if (res != '[{"res": {}}]') {
+                        var _auto = res['data']['auto'];
+                        var _manual = res['data']['manual'];
+                        var count_auto = res['data']['count_auto'];
+                        var count_manual = res['data']['count_manual'];
+                    }
+
+                    var myChart = echarts.init(document.getElementById('chart_3'));
+
+                    option = {
+                        // backgroundColor: "#404A59",
+                        color: ["#036BC8", "#5EBEFC", "#2EF7F3"],
+
+                        title: [{
+                            text: '',
+                            left: '1%',
+                            top: '6%',
+                            textStyle: {
+                                color: '#fff'
+                            }
+                        }, {
+                            text: '',
+                            left: '83%',
+                            top: '6%',
+                            textAlign: 'center',
+                            textStyle: {
+                                color: '#fff',
+                                fontSize: 16
+                            }
+                        }],
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        legend: {
+                            x: 300,
+                            top: '7%',
+                            textStyle: {
+                                color: '#ffd285',
+                            },
+                            data: ['auto', 'manual']
+                        },
+                        grid: {
+                            left: '1%',
+                            right: '28%',
+                            top: '16%',
+                            bottom: '6%',
+                            containLabel: true
+                        },
+                        toolbox: {
+                            "show": false,
+                            feature: {
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            "axisLine": {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            },
+                            "axisTick": {
+                                "show": false
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    color: '#fff'
+                                }
+                            },
+                            boundaryGap: false,
+                            data: ['4', '5', '6', '7', '8', '9', '10', '11', '12', '1', '2', '3']
+                        },
+                        yAxis: {
+                            "axisLine": {
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            },
+                            splitLine: {
+                                show: false,
+                                lineStyle: {
+                                    color: '#fff'
+                                }
+                            },
+                            "axisTick": {
+                                "show": false
+                            },
+                            axisLabel: {
+                                textStyle: {
+                                    color: '#fff'
+                                }
+                            },
+                            type: 'value'
+                        },
+                        series: [{
+                            name: '',
+                            smooth: true,
+                            type: 'line',
+                            symbolSize: 9,
+                            symbol: 'circle',
+                            data: _auto
+                        }, {
+                            name: '',
+                            smooth: true,
+                            type: 'line',
+                            symbolSize: 9,
+                            symbol: 'circle',
+                            data: _manual
+                        },
+                        {
+                            type: 'pie',
+                            center: ['83%', '33%'],
+                            radius: ['30%', '35%'],
+                            label: {
+                                normal: {
+                                    position: 'center'
+                                }
+                            },
+                            data: [{
+                                value: count_auto,
+                                name: 'auto',
+                                itemStyle: {
+                                    normal: {
+                                        color: '#FF7E45'
+                                    }
+                                },
+                                label: {
+                                    normal: {
+                                        formatter: '{d} %',
+                                        textStyle: {
+                                            color: '#ffd285',
+                                            fontSize: 14
+
+                                        }
+                                    }
+                                }
+                            }, {
+                                value: count_manual,
+                                name: '占位',
+                                tooltip: {
+                                    show: false
+                                },
+                                itemStyle: {
+                                    normal: {
+                                        color: '#fff'
+                                    }
+                                },
+                                label: {
+                                    normal: {
+                                        textStyle: {
+                                            color: '#ffd285',
+                                        },
+                                        formatter: '\n auto'
+                                    }
+                                }
+                            }]
+                        },
+                        {
+                            type: 'pie',
+                            center: ['83%', '72%'],
+                            radius: ['30%', '35%'],
+                            label: {
+                                normal: {
+                                    position: 'center'
+                                }
+                            },
+                            data: [{
+                                value: count_manual,
+                                name: 'manual',
+                                itemStyle: {
+                                    normal: {
+                                        color: '#4834CB'
+                                    }
+                                },
+                                label: {
+                                    normal: {
+                                        formatter: '{d} %',
+                                        textStyle: {
+                                            color: '#fff',
+                                            fontSize: 14
+
+                                        }
+                                    }
+                                }
+                            }, {
+                                value: count_auto,
+                                name: '占位',
+                                tooltip: {
+                                    show: false
+                                },
+                                itemStyle: {
+                                    normal: {
+                                        color: '#fff'
+
+
+                                    }
+                                },
+                                label: {
+                                    normal: {
+                                        textStyle: {
+                                            color: '#fff',
+                                        },
+                                        formatter: '\n manual'
+                                    }
+                                }
+                            }]
+                        }]
+                    }
+
+                    // 使用刚指定的配置项和数据显示图表。
+                    myChart.setOption(option);
+                    window.addEventListener("resize", function () {
+                        myChart.resize();
+                    });
+                }
+            })
+        }
+
+</script>
+
+</html>
